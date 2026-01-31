@@ -26,6 +26,7 @@
             overflow: hidden;
             user-select: none;
             -webkit-user-select: none;
+            padding: 10px;
         }
 
         .game-container {
@@ -33,18 +34,28 @@
             width: 100%;
             max-width: 640px;
             margin: 0 auto;
-            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .canvas-wrapper {
+            position: relative;
+            width: 100%;
+            max-width: 640px;
+            aspect-ratio: 640/480;
+            border: 4px solid #333;
+            border-radius: 12px;
+            background: #64b5f6;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            overflow: hidden;
         }
 
         canvas {
             display: block;
             width: 100%;
-            height: auto;
-            max-height: 80vh;
-            border: 4px solid #333;
-            border-radius: 12px;
-            background: #64b5f6;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            height: 100%;
             image-rendering: pixelated;
             image-rendering: crisp-edges;
             touch-action: none;
@@ -54,12 +65,12 @@
             display: flex;
             justify-content: center;
             gap: 20px;
-            margin-top: 20px;
             padding: 15px;
             background: rgba(0,0,0,0.7);
             border-radius: 20px;
             width: 100%;
             max-width: 400px;
+            margin-top: 0;
         }
 
         .control-btn {
@@ -113,7 +124,7 @@
             left: 15px;
             right: 15px;
             display: flex;
-            justify-content: space-between;
+            justify-content: flex-start;
             pointer-events: none;
             z-index: 10;
         }
@@ -213,7 +224,6 @@
         }
 
         .instructions {
-            margin-top: 20px;
             text-align: center;
             color: white;
             font-size: 14px;
@@ -221,6 +231,7 @@
             background: rgba(0,0,0,0.5);
             border-radius: 10px;
             max-width: 400px;
+            margin-top: 0;
         }
 
         @media (max-width: 480px) {
@@ -243,15 +254,19 @@
             .game-over h2 {
                 font-size: 28px;
             }
+            
+            .canvas-wrapper {
+                max-height: 60vh;
+            }
         }
 
         @media (max-height: 700px) {
-            canvas {
-                max-height: 70vh;
+            .canvas-wrapper {
+                max-height: 50vh;
             }
             
             .controls {
-                margin-top: 10px;
+                margin-top: 0;
             }
         }
 
@@ -279,28 +294,30 @@
 </head>
 <body class="no-select">
     <div class="game-container">
-        <div class="ui-panel">
-            <div class="ui-item">
-                <div class="ui-icon score-icon"></div>
-                <span id="score">0</span>
+        <div class="canvas-wrapper">
+            <div class="ui-panel">
+                <div class="ui-item">
+                    <div class="ui-icon score-icon"></div>
+                    <span id="score">0</span>
+                </div>
+                <div class="ui-item">
+                    <div class="ui-icon heart-icon"></div>
+                    <span id="lives">5</span>
+                </div>
+                <div class="ui-item">
+                    <div class="ui-icon level-icon"></div>
+                    <span id="level">1/5</span>
+                </div>
+                <div class="ui-item">
+                    <div class="ui-icon coin-icon"></div>
+                    <span id="coins">0</span>
+                </div>
             </div>
-            <div class="ui-item">
-                <div class="ui-icon heart-icon"></div>
-                <span id="lives">5</span>
-            </div>
-            <div class="ui-item">
-                <div class="ui-icon level-icon"></div>
-                <span id="level">1/5</span>
-            </div>
-            <div class="ui-item">
-                <div class="ui-icon coin-icon"></div>
-                <span id="coins">0</span>
-            </div>
+
+            <button class="music-btn" id="musicToggle">♪</button>
+
+            <canvas id="gameCanvas"></canvas>
         </div>
-
-        <button class="music-btn" id="musicToggle">♪</button>
-
-        <canvas id="gameCanvas"></canvas>
 
         <div class="controls">
             <button class="control-btn" id="leftBtn">←</button>
@@ -948,32 +965,14 @@
                         'linear-gradient(145deg, #ef4444, #dc2626)';
                 });
 
-                // Рестарт
-                restartBtn.addEventListener('click', () => {
-                    this.audio.stopMusic();
-                    this.resetGame();
-                    document.getElementById('gameOverScreen').style.display = 'none';
-                });
-
-                // Предотвращение контекстного меню на телефоне
-                this.canvas.addEventListener('contextmenu', (e) => e.preventDefault());
-
-                // Клавиатура для десктопа
+                // Клавиатура
                 document.addEventListener('keydown', (e) => {
                     if (e.key === 'ArrowLeft' || e.key === 'ArrowRight' || e.key === ' ') {
                         this.keys[e.key] = true;
-                        if (e.key === ' ') {
-                            this.player.jump();
-                        }
                         e.preventDefault();
                     }
                     if (e.key === 'm' || e.key === 'M') {
-                        this.audio.initialize().then(() => {
-                            const isPlaying = this.audio.toggleMusic();
-                            musicBtn.style.background = isPlaying ? 
-                                'linear-gradient(145deg, #10b981, #059669)' : 
-                                'linear-gradient(145deg, #ef4444, #dc2626)';
-                        });
+                        musicBtn.click();
                     }
                 });
 
@@ -983,6 +982,20 @@
                         e.preventDefault();
                     }
                 });
+
+                // Перезапуск
+                restartBtn.addEventListener('click', () => {
+                    this.resetGame();
+                    document.getElementById('gameOverScreen').style.display = 'none';
+                });
+
+                // Предотвращение стандартного поведения браузера
+                document.addEventListener('contextmenu', (e) => e.preventDefault());
+                document.addEventListener('touchmove', (e) => {
+                    if (e.target.tagName === 'BUTTON') {
+                        e.preventDefault();
+                    }
+                }, { passive: false });
             }
 
             resetGame() {
@@ -1001,43 +1014,45 @@
                 
                 this.generateLevel(this.currentLevel);
                 this.updateUI();
+                
+                // Инициализация аудио
+                this.audio.initialize();
             }
 
             generateLevel(level) {
-                // Очищаем предыдущие объекты
                 this.platforms = [];
                 this.enemies = [];
                 this.collectibles = [];
 
                 // Базовые платформы
                 this.platforms.push(new Platform(0, SCREEN_HEIGHT - 40, SCREEN_WIDTH, 40));
-                this.platforms.push(new Platform(100, 350, 200, 20));
-                this.platforms.push(new Platform(350, 280, 150, 20));
-                this.platforms.push(new Platform(200, 200, 120, 20));
-                this.platforms.push(new Platform(450, 150, 100, 20));
+                this.platforms.push(new Platform(50, 350, 150, 20));
+                this.platforms.push(new Platform(250, 300, 150, 20));
+                this.platforms.push(new Platform(450, 250, 150, 20));
+                this.platforms.push(new Platform(100, 200, 100, 20));
+                this.platforms.push(new Platform(300, 150, 100, 20));
+                this.platforms.push(new Platform(500, 100, 100, 20));
 
-                // Уровневая сложность
-                const enemyCount = Math.min(3 + level, 8);
-                const collectibleCount = Math.min(5 + level * 2, 15);
-
-                // Враги
+                // Враги в зависимости от уровня
+                const enemyCount = Math.min(level + 2, 8);
                 for (let i = 0; i < enemyCount; i++) {
-                    const x = 100 + Math.random() * (SCREEN_WIDTH - 200);
-                    const y = 100 + Math.random() * 200;
-                    const patrolRange = 50 + Math.random() * 100;
+                    const x = 100 + i * 70;
+                    const y = SCREEN_HEIGHT - 100 - (i % 3) * 50;
+                    const patrolRange = 50 + (i % 3) * 30;
                     this.enemies.push(new Enemy(x, y, patrolRange, level));
                 }
 
-                // Собираемые предметы
+                // Коллекционные предметы
+                const collectibleCount = 5 + level * 2;
                 for (let i = 0; i < collectibleCount; i++) {
-                    const x = 50 + Math.random() * (SCREEN_WIDTH - 100);
-                    const y = 50 + Math.random() * (SCREEN_HEIGHT - 150);
-                    const value = Math.random() > 0.7 ? 200 : 100;
+                    const x = 50 + (i * 90) % (SCREEN_WIDTH - 100);
+                    const y = 100 + Math.floor(i / 3) * 80;
+                    const value = (i % 3 === 0) ? 200 : 100;
                     this.collectibles.push(new Collectible(x, y, value));
                 }
 
-                // Выход с уровня (специальный предмет)
-                this.collectibles.push(new Collectible(SCREEN_WIDTH - 80, 80, 500));
+                // Специальный предмет для завершения уровня
+                this.collectibles.push(new Collectible(SCREEN_WIDTH - 80, 50, 500));
             }
 
             updateUI() {
@@ -1045,52 +1060,38 @@
                 document.getElementById('lives').textContent = this.lives;
                 document.getElementById('level').textContent = `${this.currentLevel}/5`;
                 document.getElementById('coins').textContent = this.coins;
+                
+                // Анимация при смене уровня
+                if (this.levelCompleteTimer > 0) {
+                    document.getElementById('level').classList.add('level-up');
+                } else {
+                    document.getElementById('level').classList.remove('level-up');
+                }
             }
 
-            update() {
+            update(deltaTime) {
                 if (this.gameOver || this.levelComplete) return;
 
                 // Управление игроком
+                this.player.velX = 0;
                 if (this.keys['ArrowLeft']) {
                     this.player.velX = -PLAYER_SPEED;
                     this.player.facingRight = false;
-                } else if (this.keys['ArrowRight']) {
+                }
+                if (this.keys['ArrowRight']) {
                     this.player.velX = PLAYER_SPEED;
                     this.player.facingRight = true;
-                } else {
-                    this.player.velX = 0;
                 }
 
-                // Обновление врагов
-                for (const enemy of this.enemies) {
-                    enemy.update();
-                }
-
-                // Обновление собираемых предметов
-                for (const collectible of this.collectibles) {
-                    collectible.update();
-                }
-
-                // Обновление игрока и проверка столкновений
+                // Обновление игрока
                 const result = this.player.update(this.platforms, this.enemies, this.collectibles);
                 
                 if (result === "collect") {
                     this.score += 100;
                     this.coins++;
                     this.updateUI();
-                    
-                    // Проверка завершения уровня
-                    if (this.collectibles.length === 0) {
-                        this.levelComplete = true;
-                        this.levelCompleteTimer = 60;
-                        this.audio.playSound('level_complete');
-                        document.getElementById('level').classList.add('level-up');
-                        setTimeout(() => {
-                            document.getElementById('level').classList.remove('level-up');
-                        }, 1500);
-                    }
                 } else if (result === "enemy_hit") {
-                    this.score += 200;
+                    this.score += 50;
                     this.updateUI();
                 } else if (result === "hurt") {
                     this.lives--;
@@ -1099,19 +1100,42 @@
                     if (this.lives <= 0) {
                         this.gameOver = true;
                         this.showGameOver(false);
+                        return;
                     }
+                    
+                    // Сброс позиции игрока
+                    this.player.x = 100;
+                    this.player.y = 100;
+                    this.player.velY = 0;
+                }
+
+                // Обновление врагов
+                for (const enemy of this.enemies) {
+                    enemy.update();
+                }
+
+                // Обновление коллекционных предметов
+                for (const collectible of this.collectibles) {
+                    collectible.update();
+                }
+
+                // Проверка завершения уровня
+                if (this.collectibles.length === 0) {
+                    this.levelComplete = true;
+                    this.levelCompleteTimer = 60;
+                    this.audio.playSound('level_complete');
                 }
 
                 // Обработка завершения уровня
                 if (this.levelComplete) {
                     this.levelCompleteTimer--;
+                    
                     if (this.levelCompleteTimer <= 0) {
                         if (this.currentLevel < 5) {
                             this.currentLevel++;
                             this.generateLevel(this.currentLevel);
                             this.player.x = 100;
                             this.player.y = 100;
-                            this.player.velX = 0;
                             this.player.velY = 0;
                             this.levelComplete = false;
                             this.updateUI();
@@ -1123,154 +1147,132 @@
                 }
             }
 
+            draw() {
+                // Очистка экрана
+                this.ctx.fillStyle = `rgb(${COLORS.SKY_BLUE.join(',')})`;
+                this.ctx.fillRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
+
+                // Облака
+                this.drawClouds();
+
+                // Платформы
+                for (const platform of this.platforms) {
+                    platform.draw(this.ctx);
+                }
+
+                // Враги
+                for (const enemy of this.enemies) {
+                    enemy.draw(this.ctx);
+                }
+
+                // Коллекционные предметы
+                for (const collectible of this.collectibles) {
+                    collectible.draw(this.ctx);
+                }
+
+                // Игрок
+                this.player.draw(this.ctx);
+
+                // Эффект завершения уровня
+                if (this.levelComplete) {
+                    this.ctx.fillStyle = `rgba(255, 255, 255, ${0.3 + Math.sin(Date.now() / 200) * 0.2})`;
+                    this.ctx.fillRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
+                    
+                    this.ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
+                    this.ctx.font = 'bold 48px Courier New';
+                    this.ctx.textAlign = 'center';
+                    this.ctx.fillText('LEVEL COMPLETE!', SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2);
+                    
+                    this.ctx.font = '24px Courier New';
+                    this.ctx.fillText(`Next level: ${this.currentLevel + 1}`, SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2 + 40);
+                }
+            }
+
+            drawClouds() {
+                const time = Date.now() / 1000;
+                
+                for (let i = 0; i < 5; i++) {
+                    const x = (time * 10 + i * 100) % (SCREEN_WIDTH + 200) - 100;
+                    const y = 50 + i * 40;
+                    const size = 40 + i * 10;
+                    
+                    this.ctx.fillStyle = `rgba(255, 255, 255, 0.8)`;
+                    this.ctx.beginPath();
+                    this.ctx.arc(x, y, size, 0, Math.PI * 2);
+                    this.ctx.arc(x + size * 0.6, y - size * 0.3, size * 0.7, 0, Math.PI * 2);
+                    this.ctx.arc(x + size * 1.2, y, size * 0.8, 0, Math.PI * 2);
+                    this.ctx.fill();
+                }
+            }
+
             showGameOver(isWin) {
                 const gameOverScreen = document.getElementById('gameOverScreen');
                 const title = document.getElementById('gameOverTitle');
                 const message = document.getElementById('gameOverMessage');
                 
                 if (isWin) {
-                    title.textContent = "ПОБЕДА!";
-                    message.textContent = `Вы прошли все уровни! Финальный счет: ${this.score}`;
+                    title.textContent = 'VICTORY!';
+                    message.textContent = `Вы прошли все уровни! Счет: ${this.score}`;
                 } else {
-                    title.textContent = "GAME OVER";
-                    message.textContent = `Игра окончена. Ваш счет: ${this.score}`;
+                    title.textContent = 'GAME OVER';
+                    message.textContent = `Попробуйте еще раз! Счет: ${this.score}`;
                 }
                 
                 gameOverScreen.style.display = 'block';
             }
 
-            draw() {
-                // Очистка экрана
-                this.ctx.fillStyle = `rgb(${COLORS.SKY_BLUE.join(',')})`;
-                this.ctx.fillRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
-
-                // Облака на заднем плане
-                this.drawBackground();
-
-                // Рисуем все объекты
-                for (const platform of this.platforms) {
-                    platform.draw(this.ctx);
-                }
-
-                for (const enemy of this.enemies) {
-                    enemy.draw(this.ctx);
-                }
-
-                for (const collectible of this.collectibles) {
-                    collectible.draw(this.ctx);
-                }
-
-                this.player.draw(this.ctx);
-
-                // Эффект завершения уровня
-                if (this.levelComplete) {
-                    this.ctx.fillStyle = `rgba(255, 255, 255, ${0.3 * Math.sin(Date.now() / 200) + 0.3})`;
-                    this.ctx.fillRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
+            start() {
+                const gameLoop = (currentTime) => {
+                    if (!this.lastTime) this.lastTime = currentTime;
                     
-                    this.ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
-                    this.ctx.fillRect(SCREEN_WIDTH / 2 - 150, SCREEN_HEIGHT / 2 - 50, 300, 100);
+                    const deltaTime = currentTime - this.lastTime;
+                    this.lastTime = currentTime;
                     
-                    this.ctx.fillStyle = 'white';
-                    this.ctx.font = 'bold 24px Courier New';
-                    this.ctx.textAlign = 'center';
-                    this.ctx.fillText('УРОВЕНЬ ПРОЙДЕН!', SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2 - 10);
+                    this.accumulator += deltaTime;
                     
-                    if (this.currentLevel < 5) {
-                        this.ctx.font = '16px Courier New';
-                        this.ctx.fillText(`Следующий уровень: ${this.currentLevel + 1}`, SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2 + 20);
-                    } else {
-                        this.ctx.font = '16px Courier New';
-                        this.ctx.fillText('ФИНАЛ!', SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2 + 20);
+                    while (this.accumulator >= this.frameTime) {
+                        this.update(this.frameTime);
+                        this.accumulator -= this.frameTime;
                     }
-                }
-
-                // Эффект получения урона
-                if (this.lives < 3) {
-                    const intensity = (3 - this.lives) * 0.1;
-                    this.ctx.fillStyle = `rgba(255, 0, 0, ${intensity * Math.sin(Date.now() / 300)})`;
-                    this.ctx.fillRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
-                }
-            }
-
-            drawBackground() {
-                // Облака
-                const time = Date.now() / 10000;
-                for (let i = 0; i < 5; i++) {
-                    const x = (time * 50 + i * 150) % (SCREEN_WIDTH + 200) - 100;
-                    const y = 50 + i * 40;
-                    const size = 40 + i * 10;
                     
-                    this.ctx.fillStyle = `rgba(255, 255, 255, 0.7)`;
-                    this.ctx.beginPath();
-                    this.ctx.arc(x, y, size, 0, Math.PI * 2);
-                    this.ctx.arc(x + size * 0.7, y - size * 0.3, size * 0.8, 0, Math.PI * 2);
-                    this.ctx.arc(x + size * 1.4, y, size * 0.9, 0, Math.PI * 2);
-                    this.ctx.fill();
-                }
-            }
-
-            gameLoop(currentTime) {
-                if (!this.lastTime) this.lastTime = currentTime;
-                const deltaTime = currentTime - this.lastTime;
-                this.lastTime = currentTime;
-
-                this.accumulator += deltaTime;
-
-                while (this.accumulator >= this.frameTime) {
-                    this.update();
-                    this.accumulator -= this.frameTime;
-                }
-
-                this.draw();
-                requestAnimationFrame((time) => this.gameLoop(time));
-            }
-
-            async start() {
-                await this.audio.initialize();
-                this.lastTime = performance.now();
-                this.gameLoop(this.lastTime);
+                    this.draw();
+                    
+                    if (!this.gameOver) {
+                        requestAnimationFrame(gameLoop);
+                    }
+                };
+                
+                requestAnimationFrame(gameLoop);
             }
         }
 
         // Запуск игры при загрузке страницы
         window.addEventListener('load', () => {
-            new Game();
-        });
+            // Предотвращение масштабирования на мобильных устройствах
+            document.addEventListener('touchstart', (e) => {
+                if (e.touches.length > 1) {
+                    e.preventDefault();
+                }
+            }, { passive: false });
 
-        // Предотвращение масштабирования при двойном тапе
-        let lastTouchEnd = 0;
-        document.addEventListener('touchend', (e) => {
-            const now = Date.now();
-            if (now - lastTouchEnd <= 300) {
-                e.preventDefault();
-            }
-            lastTouchEnd = now;
-        }, false);
+            let lastTouchEnd = 0;
+            document.addEventListener('touchend', (e) => {
+                const now = Date.now();
+                if (now - lastTouchEnd <= 300) {
+                    e.preventDefault();
+                }
+                lastTouchEnd = now;
+            }, false);
 
-        // Предотвращение скролла при касании канваса
-        document.addEventListener('touchmove', (e) => {
-            if (e.target === document.getElementById('gameCanvas')) {
-                e.preventDefault();
-            }
-        }, { passive: false });
+            // Запрет на выделение текста
+            document.addEventListener('selectstart', (e) => e.preventDefault());
 
-        // Адаптация к ориентации экрана
-        function handleOrientation() {
-            const isPortrait = window.innerHeight > window.innerWidth;
-            const gameContainer = document.querySelector('.game-container');
+            // Инициализация игры
+            const game = new Game();
             
-            if (isPortrait) {
-                gameContainer.style.maxWidth = '100%';
-                document.querySelector('.controls').style.maxWidth = '100%';
-            } else {
-                gameContainer.style.maxWidth = '640px';
-                document.querySelector('.controls').style.maxWidth = '400px';
-            }
-        }
-
-        window.addEventListener('resize', handleOrientation);
-        window.addEventListener('orientationchange', handleOrientation);
-        handleOrientation();
+            // Экспорт для отладки
+            window.game = game;
+        });
     </script>
 </body>
 </html>
